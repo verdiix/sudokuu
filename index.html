@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Dudusiowe Sudoku</title>
+  <meta name="theme-color" content="#ff4da6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-512.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="title">
+        <span class="logo">💖</span>
+        <h1>Dudusiowe Sudoku</h1>
+      </div>
+
+      <div class="controls">
+        <div class="hdr-level">
+          <span class="hdr-level-title">Poziom:</span>
+
+          <div class="dropdown" id="diff-dd">
+            <button class="btn dd-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span class="dd-label">Łatwy</span> ▾
+            </button>
+            <ul class="dd-list" role="listbox" tabindex="-1">
+              <li role="option" data-val="easy"   aria-selected="true">Łatwy</li>
+              <li role="option" data-val="medium">Średni</li>
+              <li role="option" data-val="hard">Trudny</li>
+              <li role="option" data-val="expert">Ekspert</li>
+            </ul>
+            <input type="hidden" id="difficulty" value="easy" />
+          </div>
+        </div>
+
+        <button id="newGame" class="btn primary" type="button">Nowa gra</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <div class="top-stats">
+        <div class="stat">⏱️ Czas: <b id="clock">00:00</b></div>
+        <div class="stat">💥 Błędy: <b id="mistakes">0/3</b></div>
+      </div>
+
+      <section class="board-wrap">
+        <div id="board" class="board" aria-label="Plansza Sudoku" role="grid" aria-rowcount="9" aria-colcount="9"></div>
+      </section>
+
+      <div class="below-controls">
+        <button id="pencil" class="btn" type="button"><span class="icon">✏️</span>Ołówek</button>
+        <button id="hint" class="btn" type="button"><span class="icon">💡</span>Podpowiedź (3)</button>
+        <button id="addHints" class="btn" type="button" disabled>➕ Dodaj podpowiedzi</button>
+      </div>
+    </main>
+
+    <footer class="pad-wrap" aria-label="Wybierz cyfrę">
+      <nav class="numpad" aria-label="Klawiatura cyfr">
+        <button class="key" data-key="1" type="button"><span class="k-main">1</span><span class="k-sub" id="count-1">9</span></button>
+        <button class="key" data-key="2" type="button"><span class="k-main">2</span><span class="k-sub" id="count-2">9</span></button>
+        <button class="key" data-key="3" type="button"><span class="k-main">3</span><span class="k-sub" id="count-3">9</span></button>
+        <button class="key" data-key="4" type="button"><span class="k-main">4</span><span class="k-sub" id="count-4">9</span></button>
+        <button class="key" data-key="5" type="button"><span class="k-main">5</span><span class="k-sub" id="count-5">9</span></button>
+        <button class="key" data-key="6" type="button"><span class="k-main">6</span><span class="k-sub" id="count-6">9</span></button>
+        <button class="key" data-key="7" type="button"><span class="k-main">7</span><span class="k-sub" id="count-7">9</span></button>
+        <button class="key" data-key="8" type="button"><span class="k-main">8</span><span class="k-sub" id="count-8">9</span></button>
+        <button class="key" data-key="9" type="button"><span class="k-main">9</span><span class="k-sub" id="count-9">9</span></button>
+        <button class="key" data-key="0" type="button"><span class="k-main">Usuń</span><span class="k-sub"></span></button>
+      </nav>
+    </footer>
+
+    <!-- modale -->
+    <div id="modal" class="modal" hidden>
+      <div class="modal-card">
+        <h2 id="modal-title">Tytuł</h2>
+        <p id="modal-text">Treść</p>
+
+        <div class="modal-row joint">
+          <label>Poziom:</label>
+          <div class="dropdown" id="modal-dd">
+            <button class="btn dd-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+              <span class="dd-label">Łatwy</span> ▾
+            </button>
+            <ul class="dd-list" role="listbox" tabindex="-1">
+              <li role="option" data-val="easy"   aria-selected="true">Łatwy</li>
+              <li role="option" data-val="medium">Średni</li>
+              <li role="option" data-val="hard">Trudny</li>
+              <li role="option" data-val="expert">Ekspert</li>
+            </ul>
+            <input type="hidden" id="modal-diff" value="easy" />
+          </div>
+
+          <button id="modal-new" class="btn primary" type="button">Nowa gra</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="extra-modal" class="modal" hidden>
+      <div class="modal-card center">
+        <h2>Dudusiowe podpowiedzi 😘</h2>
+        <p class="centered">
+          Jeżeli za trudne tio moziesz dostać więcej podpowiedzi ^^<br/>
+          Musisz kliknąć: <b>28+13</b> razy hihi 💖💋🥰
+        </p>
+        <div class="modal-actions center duo">
+          <button id="extra-click" class="btn" type="button">Kliknij mnie słodziutka</button>
+          <button id="extra-continue" class="btn primary" type="button">Graj dalej</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
