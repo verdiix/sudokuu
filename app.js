@@ -26,7 +26,10 @@ let state = {
   difficulty: "easy",
   hintsLeft: 3,
   locked: false,
-  extraHintsUsed: false
+  extraHintsUsed: false,
+
+  /* NOWE: numer klikniętego klawisza do mocnego podświetlenia */
+  highlightDigit: null
 };
 
 let settings = { highlightPeers: true };
@@ -167,28 +170,66 @@ function renderBoard(){
 
 let selected={r:null,c:null};
 function updateSelectionStyles(){
-  $$(".cell").forEach(c=>c.classList.remove("selected","conflict","peer-row","peer-col","peer-block"));
-  const {r,c}=selected; if(r==null||c==null) return;
+  // usuń stare klasy
+  $$(".cell").forEach(c=>c.classList.remove("selected","conflict","peer-row","peer-col","peer-block","same","key-same"));
 
-  const selEl=document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-  if(selEl) selEl.classList.add("selected");
+  const {r,c}=selected;
+  const highlightDigit = state.highlightDigit;
 
-  for(let i=0;i<9;i++){
-    if(i!==c){ const elR=document.querySelector(`.cell[data-r="${r}"][data-c="${i}"]`); if(elR) elR.classList.add("peer-row"); }
-    if(i!==r){ const elC=document.querySelector(`.cell[data-r="${i}"][data-c="${c}"]`); if(elC) elC.classList.add("peer-col"); }
-  }
-  const br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
-  for(let rr=br; rr<br+3; rr++) for(let cc=bc; cc<bc+3; cc++){
-    if(!(rr===r && cc===c)){ const elB=document.querySelector(`.cell[data-r="${rr}"][data-c="${cc}"]`); if(elB) elB.classList.add("peer-block"); }
+  if(r!=null && c!=null){
+    const selEl=document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+    if(selEl) selEl.classList.add("selected");
+
+    // wiersz/kolumna
+    for(let i=0;i<9;i++){
+      if(i!==c){ const elR=document.querySelector(`.cell[data-r="${r}"][data-c="${i}"]`); if(elR) elR.classList.add("peer-row"); }
+      if(i!==r){ const elC=document.querySelector(`.cell[data-r="${i}"][data-c="${c}"]`); if(elC) elC.classList.add("peer-col"); }
+    }
+    // blok 3x3
+    const br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
+    for(let rr=br; rr<br+3; rr++) for(let cc=bc; cc<bc+3; cc++){
+      if(!(rr===r && cc===c)){ const elB=document.querySelector(`.cell[data-r="${rr}"][data-c="${cc}"]`); if(elB) elB.classList.add("peer-block"); }
+    }
+
+    // „takie same cyfry” z komórki (gdy brak trybu z klawisza)
+    const val=state.grid[r][c];
+    if(val && !highlightDigit){
+      for(let rr=0; rr<9; rr++){
+        for(let cc=0; cc<9; cc++){
+          if(state.grid[rr][cc]===val){
+            const el=document.querySelector(`.cell[data-r="${rr}"][data-c="${cc}"]`);
+            if(el) el.classList.add("same");
+          }
+        }
+      }
+      // konflikty (jak wcześniej)
+      for(let i=0;i<9;i++){
+        if(i!==c && state.grid[r][i]===val) mark(r,i);
+        if(i!==r && state.grid[i][c]===val) mark(i,c);
+      }
+      const rr0=Math.floor(r/3)*3, cc0=Math.floor(c/3)*3;
+      for(let rr=rr0; rr<rr0+3; rr++) for(let cc=cc0; cc<cc0+3; cc++){
+        if(!(rr===r&&cc===c) && state.grid[rr][cc]===val) mark(rr,cc);
+      }
+    }
   }
 
-  const val=state.grid[r][c];
-  if(val){
-    for(let i=0;i<9;i++){ if(i!==c && state.grid[r][i]===val) mark(r,i); if(i!==r && state.grid[i][c]===val) mark(i,c); }
-    const rr0=Math.floor(r/3)*3, cc0=Math.floor(c/3)*3;
-    for(let rr=rr0; rr<rr0+3; rr++) for(let cc=cc0; cc<cc0+3; cc++){ if(!(rr===r&&cc===c) && state.grid[rr][cc]===val) mark(rr,cc); }
+  // „takie same cyfry” po kliknięciu klawisza – MOCNE
+  if(highlightDigit){
+    for(let rr=0; rr<9; rr++){
+      for(let cc=0; cc<9; cc++){
+        if(state.grid[rr][cc]===highlightDigit){
+          const el=document.querySelector(`.cell[data-r="${rr}"][data-c="${cc}"]`);
+          if(el) el.classList.add("key-same");
+        }
+      }
+    }
   }
-  function mark(rr,cc){ const el=document.querySelector(`.cell[data-r="${rr}"][data-c="${cc}"]`); if(el) el.classList.add("conflict"); }
+
+  function mark(rr,cc){
+    const el=document.querySelector(`.cell[data-r="${rr}"][data-c="${cc}"]`);
+    if(el) el.classList.add("conflict");
+  }
 }
 
 /* rozgrywka */
@@ -226,6 +267,7 @@ function newGame(){
   state.grid=puzzle; state.fixed=puzzle.map(r=>r.map(v=>v!==0)); state.solution=solution;
   state.notes=Array.from({length:9},()=>Array.from({length:9},()=>new Set()));
   state.mistakes=0; state.hintsLeft=3; state.startTime=Date.now(); state.elapsed=0; state.difficulty=level; state.locked=false; state.extraHintsUsed=false;
+  state.highlightDigit=null;            /* reset */
   selected={r:null,c:null};
   save(); renderBoard();
   $("#clock").textContent="00:00";
@@ -246,16 +288,43 @@ function setupUI(){
   window._modalDD  = setupDropdown("modal-dd","modal-diff",null);
 
   onPointer(".cell", (_e,el)=>{ if(state.locked) return; const r=+el.dataset.r, c=+el.dataset.c; selected={r,c}; updateSelectionStyles(); });
-  onPointer(".key", (_e,el)=>{ if(state.locked) return; const n=+el.dataset.key; const {r,c}=selected; if(r==null||c==null) return; if(n===0){ if(state.pencil) clearNotes(r,c); else if(!state.fixed[r][c]) setValue(r,c,0); return; } setValue(r,c,n); });
+
+  onPointer(".key", (_e,el)=>{
+    if(state.locked) return;
+    const n=+el.dataset.key;
+    // MOCNE podświetlenie cyfr po kliknięciu klawisza
+    state.highlightDigit = (n>=1 && n<=9) ? n : null;
+
+    const {r,c}=selected;
+    if(r==null||c==null){
+      // Bez aktywnej komórki – tylko highlight
+      updateSelectionStyles();
+      return;
+    }
+    if(n===0){
+      if(state.pencil) clearNotes(r,c);
+      else if(!state.fixed[r][c]) setValue(r,c,0);
+      updateSelectionStyles();
+      return;
+    }
+    setValue(r,c,n);
+  });
 
   onPointer("#pencil", ()=>{ if(state.locked) return; state.pencil=!state.pencil; updateUI(); });
   onPointer("#hint", hint);
   onPointer("#addHints", openExtraModal);
   onPointer("#newGame", newGame);
 
-  window.addEventListener("keydown", (e)=>{ if(state.locked) return; const {r,c}=selected; if(r==null||c==null) return;
+  // klawiatura fizyczna
+  window.addEventListener("keydown", (e)=>{
+    if(state.locked) return;
+    if(e.key>='1'&&e.key<='9'){ state.highlightDigit=+e.key; }
+    if(e.key==='0'||e.key==='Backspace'||e.key==='Delete'){ state.highlightDigit=null; }
+    const {r,c}=selected; if(r==null||c==null){ updateSelectionStyles(); return; }
     if(e.key>='1'&&e.key<='9') setValue(r,c,+e.key);
-    else if(e.key==='Backspace'||e.key==='Delete'||e.key==='0'){ if(state.pencil) clearNotes(r,c); else if(!state.fixed[r][c]) setValue(r,c,0); }
+    else if(e.key==='Backspace'||e.key==='Delete'||e.key==='0'){
+      if(state.pencil) clearNotes(r,c); else if(!state.fixed[r][c]) setValue(r,c,0);
+    }
   });
 }
 
