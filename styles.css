@@ -4,6 +4,17 @@
   --card:#2a0f1f; --muted:#f3b3cf; --text:#fff7fb;
   --primary:#ff4da6; --primary-2:#ff7bd3; --accent:#ff78b8; --danger:#ff5c7a;
   --grid:#ffb3d6; --grid-bold:#ffd2e8;
+
+  /* kolory podświetleń – MOCNIEJSZE */
+  --sel-glow:#ff2fbf;                       /* kontur/glow zaznaczonej komórki */
+  --sel-fill:rgba(255, 47, 191, .46);       /* tło zaznaczonej komórki */
+  --peer-fill:rgba(255, 170, 215, .38);     /* wiersz/kolumna */
+  --peer-outline:rgba(255, 170, 215, .65);  /* subtelny kontur peers */
+  --peer-block:rgba(255, 140, 200, .34);    /* blok 3x3 */
+  --same-fill:rgba(255, 210, 235, .28);     /* tło „takie same cyfry” (z komórki) */
+  --same-glow:rgba(255,120,200,.55);        /* glow „takie same cyfry” */
+  --conflict:rgba(255, 80, 120, .28);       /* konflikt */
+  --correct:rgba(255, 190, 225, .40);       /* poprawny strzał */
 }
 
 :root{
@@ -106,16 +117,16 @@ body{
   box-shadow:0 10px 40px rgba(255,0,120,.15), inset 0 0 0 1px rgba(255,199,231,.18);
 
   display:grid;
-  grid-template-columns:repeat(3, 1fr);     /* <<< 3 kolumny bloków */
-  grid-template-rows:repeat(3, 1fr);        /* <<< 3 rzędy bloków (NAPRAWA) */
+  grid-template-columns:repeat(3, 1fr);
+  grid-template-rows:repeat(3, 1fr);
   gap:0;
   position:relative;overflow:hidden;touch-action:manipulation;
 }
 
 /* GRUBE linie = obramowania bloków */
 .block{
-  width:100%;height:100%;             /* <<< Wypełnij tor gridu (NAPRAWA) */
-  min-width:0;min-height:0;           /* <<< Zapobiega „rozpychaniu” (NAPRAWA) */
+  width:100%;height:100%;
+  min-width:0;min-height:0;
 
   display:grid;
   grid-template-columns:repeat(3, 1fr);
@@ -125,30 +136,66 @@ body{
   border-right:3px solid var(--grid-bold);
   border-bottom:3px solid var(--grid-bold);
 }
-.block:nth-child(-n+3){ border-top:3px solid var(--grid-bold);} /* górny rząd bloków */
-.block:nth-child(3n+1){ border-left:3px solid var(--grid-bold);} /* lewa kolumna bloków */
+.block:nth-child(-n+3){ border-top:3px solid var(--grid-bold);}
+.block:nth-child(3n+1){ border-left:3px solid var(--grid-bold);}
 
 /* Cienkie linie = wewnątrz bloku */
 .block .cell{
-  width:100%;height:100%;             /* <<< pełne wypełnienie (NAPRAWA) */
+  width:100%;height:100%;
   position:relative;display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:clamp(14px,3.2vw,26px);
+  font-weight:800;font-size:clamp(14px,3.2vw,26px);
   -webkit-user-select:none;user-select:none;
   background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;z-index:1;
 
   border-right:1px solid var(--grid);
   border-bottom:1px solid var(--grid);
 }
-/* usuń cienkie na krawędziach bloku (tam są grube) */
 .block .cell:nth-child(3n){ border-right:none; }
 .block .cell:nth-child(n+7){ border-bottom:none; }
 
-/* stany */
+/* ======= WIDOCZNIEJSZE PODŚWIETLENIA ======= */
 .cell.fixed{background:rgba(255,192,220,.13);color:#fffafc;}
-.cell.selected{outline:3px solid var(--accent);outline-offset:-3px;box-shadow:inset 0 0 0 2px rgba(255,120,184,.35);z-index:2;}
-.cell.conflict{background:rgba(255,92,122,.18);}
-.cell.peer-row,.cell.peer-col{background:rgba(255,214,235,.14);}
-.cell.peer-block{background:rgba(255,194,226,.16);}
+
+.cell.selected{
+  background:var(--sel-fill);
+  outline:4px solid var(--sel-glow);
+  outline-offset:-4px;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.25), 0 0 18px 2px rgba(255,47,191,.45);
+  z-index:3;
+}
+
+/* peers – mocniejsze + delikatny obrys żeby było widać krawędzie */
+.cell.peer-row,.cell.peer-col{
+  background:var(--peer-fill);
+  box-shadow: inset 0 0 0 1px var(--peer-outline);
+}
+.cell.peer-block{
+  background:var(--peer-block);
+  box-shadow: inset 0 0 0 1px rgba(255,140,200,.55);
+}
+
+/* „takie same cyfry” – z komórki */
+.cell.same{
+  background:var(--same-fill);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 0 12px 2px var(--same-glow);
+  z-index:2;
+}
+
+/* „takie same cyfry” – po kliknięciu klawisza (mocno jak selected) */
+.cell.key-same{
+  background:var(--sel-fill);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.28), 0 0 18px 2px var(--sel-glow);
+  z-index:2;
+}
+
+/* konflikt */
+.cell.conflict{background:var(--conflict);}
+
+/* feedback poprawne/błędne */
+@keyframes pulseCorrect{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.cell.correct{background:var(--correct)!important; animation:pulseCorrect .45s ease;}
+.cell.wrong{background:var(--conflict)!important; animation:shake .22s linear;}
 
 /* notatki/wartości */
 .cell .notes{position:absolute;inset:2px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;font-size:clamp(8px,1.6vw,12px);color:#ffd0e5;opacity:.95;pointer-events:none;}
